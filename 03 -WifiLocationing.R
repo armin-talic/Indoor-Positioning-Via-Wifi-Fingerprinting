@@ -14,6 +14,7 @@ library(plotly)
 
 
 # Set working directory
+setwd("C:/Users/tarmi/Desktop/Ubiqum/3 - Deep analytics and visualization/3 -Evaluate Techniques for Wifi Locationing")
 
 # Import training dataset
 trainingData <- read_csv("trainingData.csv")
@@ -70,19 +71,19 @@ x <- trainingData[,1:465]
 x <- stack(x)
 
 x <- x[-grep(0, x$values),]
-hist(x$values, xlab = "WAP strength", main = "Distribution of WAPs signal stength", col = "blue")
+hist(x$values, xlab = "WAP strength", main = "Distribution of WAPs signal stength (Training set)", col = "red")
 
 # test data
 y <- testData[,1:367]
 y <- stack(y)
 
 y <- y[-grep(0, y$values),]
-hist(y$values, xlab = "WAP strength", main = "Distribution of WAPs signal stength", col = "blue")
+hist(y$values, xlab = "WAP strength", main = "Distribution of WAPs signal stength (Test set)", col = "blue")
 
 ggplot() +
-  geom_histogram(data = x, aes(values), fill = "red", alpha = 0.2, binwidth = 5) +
+  geom_histogram(data = x, aes(values), fill = "red", alpha = 1, binwidth = 5) +
   geom_histogram(data = y, aes(values), fill = "blue", alpha = 1, binwidth = 5) +
-  ggtitle("Distribution of WAPs signal strength") +
+  ggtitle("Distribution of WAPs signal strength (Training and Test sets)") +
   xlab("WAP strength")
 
 
@@ -91,7 +92,7 @@ ggplot() +
 trainingData$count <- rowSums(trainingData[, 1:465] != 0)
 ggplot(trainingData, aes(count, fill = as.factor(trainingData$BUILDINGID))) +
   geom_histogram(binwidth = 2)+
-  ggtitle("Number of WAPs detected per building") +
+  ggtitle("Number of WAPs detected per building (Training set)") +
   scale_fill_manual(name="Buildings", values = c("0" = "royalblue2",
                                "1" = "firebrick2",
                                "2" = "springgreen1"),
@@ -101,11 +102,11 @@ ggplot(trainingData, aes(count, fill = as.factor(trainingData$BUILDINGID))) +
 testData$count <- rowSums(testData[, 1:367] != 0)
 ggplot(testData, aes(count, fill = as.factor(testData$BUILDINGID))) +
   geom_histogram(binwidth = 2)+
-  ggtitle("Number of WAPs detected per building") +
+  ggtitle("Number of WAPs detected per building (Test set)") +
   scale_fill_manual(name="Buildings", values = c("0" = "royalblue2",
                                                  "1" = "firebrick2",
                                                  "2" = "springgreen1"),
-                    labels=c("Building 1","Building 2", "Building 3"))  
+                    labels=c("Building 1","Building 2", "Building 3"))
 
 
 # Convert Longitude and Latitude values to absolute values
@@ -119,6 +120,7 @@ trainingData$LONGITUDE <- trainingData$LONGITUDE - min(trainingData$LONGITUDE)
 testData$LONGITUDE <- testData$LONGITUDE - min(testData$LONGITUDE)
 
 
+# Locations at which users logged in 
 # Red colour is outside the room, black inside
 p <- ggplot(trainingData, aes(trainingData$LONGITUDE, trainingData$LATITUDE))
 p + geom_point(colour = as.factor(trainingData$RELATIVEPOSITION)) +
@@ -126,18 +128,26 @@ p + geom_point(colour = as.factor(trainingData$RELATIVEPOSITION)) +
   ylim(0, 300) +
   xlab("Longitude") +
   ylab("Latitude") +
-  title ("Locations at which users loged in")
+  ggtitle ("Locations at which users loged in (Training dataset)")
 
 # Training and Validation log in locations
 ggplot() +
   geom_point(data = trainingData, aes(x = LONGITUDE, y = LATITUDE, colour = "Training dataset")) +
   geom_point(data = testData, aes(x = LONGITUDE, y = LATITUDE, colour = "Test dataset")) +
-  ggtitle("Log In Locations") 
+  ggtitle("Log In Locations (Training and Test sets)") 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  MODEL TO PREDICT BUILDING ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    Split Training and Test sets  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 training <- trainingData[ ,1:469]
+
+# Import validation dataset
+validation <- testData
+
+# Drop columns from validation that do not match with traning set
+cols_to_keep <- intersect(colnames(training),colnames(validation))
+training <- training[,cols_to_keep, drop=FALSE]
+validation <- validation[,cols_to_keep, drop=FALSE]
 
 set.seed(123)
 trainIndex <- createDataPartition(y = training$BUILDINGID, p = 0.75,
@@ -169,22 +179,20 @@ knnPredict <- predict(knnFit,newdata = testSet)
 knnCM <-confusionMatrix(knnPredict, testSet$BUILDINGID)
 
 # Check results on validation dataset
-# Import validation dataset
-validation <- testData
-
-# Drop columns from validation that do not match with traning set
-cols_to_keep <- intersect(colnames(training),colnames(validation))
-training <- training[,cols_to_keep, drop=FALSE]
-validation <- validation[,cols_to_keep, drop=FALSE]
-
 # Convert data types in validation dataset
 validation$BUILDINGID <- as.factor(validation$BUILDINGID)
 
 # Apply k-NN model to the validation data
 knnPredicttest <- predict(knnFit,newdata = validation)
 knnCM <-confusionMatrix(knnPredicttest, validation$BUILDINGID)
-
-
+knnCM
+# Performance:
+#Confusion Matrix     0    1    2
+#                 0  536   0    0
+#                 1   0   307   0
+#                 2   0    0   268
+# Accuracy 1
+# Kappa 1
 #  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Create dataset for each building and floor ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Create a dataset for each building
 Building1 <- subset(trainingData, BUILDINGID == 0)
@@ -263,7 +271,7 @@ buildplot1 <- buildplot1[,521:530]
 z <- buildplot1$z
 x <- buildplot1$LONGITUDE
 y <- buildplot1$LATITUDE
-scatterplot3d(x, y, z, pch = 20, angle = 45, color = buildplot1$RELATIVEPOSITION, main = "Building 1")
+scatterplot3d(x, y, z, pch = 20, angle = 45, color = buildplot1$RELATIVEPOSITION, main = "Building 1 Log In points")
 
 # # Building 2
 # Building2Floor1$z <- 1
@@ -299,10 +307,8 @@ scatterplot3d(x, y, z, pch = 20, angle = 45, color = buildplot1$RELATIVEPOSITION
 
 
 # Find where is the highest signal strength
-a <- which(Building3[,1:119] > -10 & Building3[,1:119] < 1)
-which(Building3[,1:119] == 0)
-which(Building3[,1:119] == 0, arr.ind=TRUE)
-length(which(trainingData[,1:465] > -30 & trainingData[,1:465] < 1))
+which(Building3[,1:119] == 105)
+which(Building3[,1:119] == 105, arr.ind=TRUE)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Signal greater than 60 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 abc <- which(apply(trainingData[, 1:465], 1, function(x) length(which(x > 60))) > 0)
@@ -312,16 +318,16 @@ gs <- ggplot(GoodSignal, aes(GoodSignal$LONGITUDE, GoodSignal$LATITUDE))
 gs + geom_point(colour = as.factor(GoodSignal$RELATIVEPOSITION))
 
 
-# Remove columns (WAP) where all the values = 100 (WAP was not detected)
+# Remove columns (WAP) where all the values = 0 (WAP was not detected)
 uniquelength <- sapply(GoodSignal,function(x) length(unique(x)))
 GoodSignal <- subset(GoodSignal, select=uniquelength>1)
 
-# Remove rows (WAP) where all the values = 100 (WAP was not detected)
+# Remove rows (WAP) where all the values = 0 (WAP was not detected)
 keep <- apply(GoodSignal[,1:183], 1, function(x) length(unique(x[!is.na(x)])) != 1)
 GoodSignal[keep, ]
 
 
-# Signal greater than -50
+# Signal between 20 and 60
 def <- which(apply(trainingData[, 1:465], 1, function(x) length(which(x > 20 & x < 60))) > 0)
 Mediumsignal <- trainingData[def, ]
 
@@ -336,137 +342,141 @@ bs <- ggplot(BadSignal, aes(BadSignal$LONGITUDE, BadSignal$LATITUDE))
 bs + geom_point(colour = as.factor(BadSignal$RELATIVEPOSITION))
 
 
+# ~~~~~~~~~~~~~~~~~  THIS MODEL HAS LOW PERFORMACE SINCE THE DATA IS NOT NORMALIZED ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  Build model to predict Floor for Building 1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    Split Training and Test sets  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Building1 <- subset(trainingData, BUILDINGID == 0)
-# Remove columns (WAP) where all the values = 0 (WAP was not detected)
-# Building 1
-uniquelength <- sapply(Building1,function(x) length(unique(x)))
-Building1 <- subset(Building1, select=uniquelength>1)
-
-# Remove rows (WAP) where all the values = 0 (WAP was not detected)
-keep <- apply(Building1[,1:200], 1, function(x) length(unique(x[!is.na(x)])) != 1)
-Building1 <-  Building1[keep, ]
-
-Building1$FLOOR <- factor(Building1$FLOOR)
-cols <- c(1:200, 203)
-training <- Building1[ , cols]
-training$FLOOR <- factor(training$FLOOR)
-
-set.seed(123)
-trainIndex <- createDataPartition(y = training$FLOOR, p = 0.75,
-                                  list = FALSE)
-
-
-#                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~    Training and Test sets  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-trainSet <- training [trainIndex,]
-testSet <- training [-trainIndex,]
-
-#                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~    K-NN    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-df <- trainSet
-
-
-set.seed(123)
-ctrl <- trainControl(method="cv",number = 10) 
-knnFit <- train((FLOOR ~ .), data = df, method = "knn", trControl = ctrl, tuneLength = 5)
-
-#Output of kNN fit
-knnFit 
-#write.csv(knnFit, file = 'knnperformance.csv')
-
-# test the k-NN model
-knnPredict <- predict(knnFit,newdata = testSet)
-postResample(knnPredict, testSet$FLOOR)
-
-# Check results on validation dataset
-# Import validation dataset
-validation <- testData
-
-# Drop columns from validation that do not match with traning set
-cols_to_keep <- intersect(colnames(training),colnames(validation))
-validation <- validation[,cols_to_keep, drop=FALSE]
-
-# Apply k-NN model to the validation data
-knnPredicttest <- predict(knnFit,newdata = validation)
-postResample(knnPredicttest, validation$FLOOR)
-
-# Result Accuracy     Kappa 
-# ~~~~~~ 0.5094509 0.3861611 
-
-#             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~   Random Forest   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-set.seed(123)
-ctrl <- trainControl(method="cv", number = 10) 
-
-# Random forest
-rfFit <- train(FLOOR ~ ., data = trainSet, method = "rf", trControl = ctrl, preProcess = c("center","scale"), tuneLength = 1)
-rfPredict <- predict(rfFit, newdata = testSet)
-rfCM <- confusionMatrix(rfPredict, testSet$FLOOR)
-
-rfPredicttest <- predict(rfFit, newdata = validation)
-postResample(knnPredicttest, validation$FLOOR)
-# Performance Accuracy     Kappa 
-#             0.5112511 0.3883641 
-
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~ Model with Normalized rows (mean = 0, variance = 1) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-som_row <- normalize(Building1[,1:200], byrow=TRUE)
-try <- as.data.frame(som_row)
-try$FLOOR <- Building1$FLOOR
-Building1[1:200] <- try[1:200]
-
-Building1$FLOOR <- factor(Building1$FLOOR)
-cols <- c(1:200, 203)
-training <- Building1[ , cols]
-training$FLOOR <- factor(training$FLOOR)
-
-set.seed(123)
-trainIndex <- createDataPartition(y = training$FLOOR, p = 0.75,
-                                  list = FALSE)
+# # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  Build model to predict Floor for Building 1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    Split Training and Test sets  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 
+# Building1 <- subset(trainingData, BUILDINGID == 0)
+# # Remove columns (WAP) where all the values = 0 (WAP was not detected)
+# # Building 1
+# uniquelength <- sapply(Building1,function(x) length(unique(x)))
+# Building1 <- subset(Building1, select=uniquelength>1)
+# 
+# # Remove rows (WAP) where all the values = 0 (WAP was not detected)
+# keep <- apply(Building1[,1:200], 1, function(x) length(unique(x[!is.na(x)])) != 1)
+# Building1 <-  Building1[keep, ]
+# 
+# Building1$FLOOR <- factor(Building1$FLOOR)
+# cols <- c(1:200, 203)
+# training <- Building1[ , cols]
+# training$FLOOR <- factor(training$FLOOR)
+# 
+# set.seed(123)
+# trainIndex <- createDataPartition(y = training$FLOOR, p = 0.75,
+#                                   list = FALSE)
+# 
+# 
+# #                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~    Training and Test sets  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 
+# trainSet <- training [trainIndex,]
+# testSet <- training [-trainIndex,]
+# 
+# #                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~    K-NN    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 
+# df <- trainSet
+# 
+# 
+# set.seed(123)
+# ctrl <- trainControl(method="cv",number = 10) 
+# knnFit <- train((FLOOR ~ .), data = df, method = "knn", trControl = ctrl, tuneLength = 5)
+# 
+# #Output of kNN fit
+# knnFit 
+# #write.csv(knnFit, file = 'knnperformance.csv')
+# 
+# # test the k-NN model
+# knnPredict <- predict(knnFit,newdata = testSet)
+# postResample(knnPredict, testSet$FLOOR)
+# 
+# # Check results on validation dataset
+# # Import validation dataset
+# validation <- testData
+# 
+# # Drop columns from validation that do not match with traning set
+# cols_to_keep <- intersect(colnames(training),colnames(validation))
+# validation <- validation[,cols_to_keep, drop=FALSE]
+# 
+# # Apply k-NN model to the validation data
+# knnPredicttest <- predict(knnFit,newdata = validation)
+# postResample(knnPredicttest, validation$FLOOR)
+# 
+# # Result Accuracy     Kappa 
+# # ~~~~~~ 0.5094509 0.3861611 
+# 
+# #             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~   Random Forest   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 
+# set.seed(123)
+# ctrl <- trainControl(method="cv", number = 10) 
+# 
+# # Random forest
+# rfFit <- train(FLOOR ~ ., data = trainSet, method = "rf", trControl = ctrl, preProcess = c("center","scale"), tuneLength = 1)
+# rfPredict <- predict(rfFit, newdata = testSet)
+# rfCM <- confusionMatrix(rfPredict, testSet$FLOOR)
+# 
+# rfPredicttest <- predict(rfFit, newdata = validation)
+# postResample(knnPredicttest, validation$FLOOR)
+# # Performance Accuracy     Kappa 
+# #             0.5112511 0.3883641 
 
 
-#                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~    Training and Test sets  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# THIS MODEL ALSO HAS LOW PERFORMACE
+# # ~~~~~~~~~~~~~~~~~~~~~~~~~~ Model with Normalized rows (mean = 0, variance = 1) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# som_row <- normalize(Building1[,1:200], byrow=TRUE)
+# try <- as.data.frame(som_row)
+# try$FLOOR <- Building1$FLOOR
+# Building1[1:200] <- try[1:200]
+# 
+# Building1$FLOOR <- factor(Building1$FLOOR)
+# cols <- c(1:200, 203)
+# training <- Building1[ , cols]
+# training$FLOOR <- factor(training$FLOOR)
+# 
+# set.seed(123)
+# trainIndex <- createDataPartition(y = training$FLOOR, p = 0.75,
+#                                   list = FALSE)
+# 
+# 
+# #                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~    Training and Test sets  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 
+# trainSet <- training [trainIndex,]
+# testSet <- training [-trainIndex,]
+# 
+# #                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~    K-NN    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 
+# df <- trainSet
+# 
+# 
+# set.seed(123)
+# ctrl <- trainControl(method="cv",number = 10) 
+# knnFit <- train((FLOOR ~ .), data = df, method = "knn", trControl = ctrl, tuneLength = 5)
+# 
+# #Output of kNN fit
+# knnFit 
+# #write.csv(knnFit, file = 'knnperformance.csv')
+# 
+# # test the k-NN model
+# knnPredict <- predict(knnFit,newdata = testSet)
+# postResample(knnPredict, testSet$FLOOR)
+# 
+# # Check results on validation dataset
+# # Import validation dataset
+# validation <- testData
+# 
+# # Drop columns from validation that do not match with traning set
+# cols_to_keep <- intersect(colnames(training),colnames(validation))
+# validation <- validation[,cols_to_keep, drop=FALSE]
+# 
+# # Apply k-NN model to the validation data
+# knnPredicttest <- predict(knnFit,newdata = validation)
+# postResample(knnPredicttest, validation$FLOOR)
+# 
+# # Performance Accuracy     Kappa 
+# #             0.5724572 0.4031253 
 
-trainSet <- training [trainIndex,]
-testSet <- training [-trainIndex,]
 
-#                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~    K-NN    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-df <- trainSet
-
-
-set.seed(123)
-ctrl <- trainControl(method="cv",number = 10) 
-knnFit <- train((FLOOR ~ .), data = df, method = "knn", trControl = ctrl, tuneLength = 5)
-
-#Output of kNN fit
-knnFit 
-#write.csv(knnFit, file = 'knnperformance.csv')
-
-# test the k-NN model
-knnPredict <- predict(knnFit,newdata = testSet)
-postResample(knnPredict, testSet$FLOOR)
-
-# Check results on validation dataset
-# Import validation dataset
-validation <- testData
-
-# Drop columns from validation that do not match with traning set
-cols_to_keep <- intersect(colnames(training),colnames(validation))
-validation <- validation[,cols_to_keep, drop=FALSE]
-
-# Apply k-NN model to the validation data
-knnPredicttest <- predict(knnFit,newdata = validation)
-postResample(knnPredicttest, validation$FLOOR)
-
-# Performance Accuracy     Kappa 
-#             0.5724572 0.4031253 
-
+# ONCE THE KNN MODEL IS BUILT WITH NORMALIZED DATA, RANDOM FOREST AND GRADIENT BOOSTING MODEL
+# ARE USED WITH THE NORMALIZED DATA
 #             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~   Random Forest   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 set.seed(123)
@@ -811,7 +821,7 @@ postResample(knnPredicttest, validation$FLOOR)
 # ACCURACY = 0.94869487524 = 94.86 %
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PREDICT COORDINATED BUILDING 1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PREDICT COORDINATES OF BUILDING 1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ LONGITUDE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 try <- Building1[,1:200]
 # Remove columns (WAP) where all the values = 0 (WAP was not detected)
