@@ -149,15 +149,10 @@ To predict the final position of a user connected to the internet from the signa
 The performance of the model on validation set for Building 1 for longitude and latitude is shown below.
 
 Longitude KNN model performance:
-RMSE: 7.6099567                
-Rsquared: 0.9397686 
-MAE: 6.0526775
+RMSE = 7.6099567, Rsquared = 0.9397686, MAE = 6.0526775
 
 Latitude KNN model performance:
-RMSE: 7.1845765                
-Rsquared: 0.9601064 
-MAE: 5.0841969
-
+RMSE = 7.1845765, Rsquared = 0.9601064, MAE = 5.0841969
 
 The visual result of predicted coordinates and the real ones can be seen in the following figure.
 
