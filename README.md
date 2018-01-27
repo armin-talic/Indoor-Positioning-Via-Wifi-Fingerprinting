@@ -47,25 +47,83 @@ It can be seen that least amount of high WAP signals was recorded in the middle 
 # Results (Machine Learning Models)
 
 I started with building the model to predict the building at which user had connected to the internet. 
-The first model had low accuracy so I decided to normalize WAPs rows put them in range from 0 to 1) and it drastically improved the model's performance. 
+The first model had low accuracy so I decided to normalize WAPs rows put them in range from 0 to 1) and it drastically improved the model's performance. Also, different WAPs in test and validation set are not detected. It was important to remove these columns from both sets and leave only the columns that intersect in both datasets. 
+Another thing that further improved the performance of the model was choosing the threshold for WAPs signal strength. With normalized data, I have found that the best performance is achieved when building models only with rows where the average value is above 0.6 (excluding non-detected WAPS)
 
 ## Building prediction (Classification with KNN model)
 
-With normalized WAP rows, the achieved accuracy is 100% for buildings' prediciton with KNN model. 
-The confusion matrix and performance of the model can be seen below:
-### Confusion Matrix:      0    1    2
-###                   0  536   0    0
-###                   1   0   307   0
-###                 2   0    0   268
+With normalized WAP rows, the achieved accuracy is 100% for buildings' prediciton on validation set with KNN model. 
+The performance and confusion matrix of the model can be seen below:
+
 ### Accuracy = 1
 ### Kappa = 1
 
+### Confusion Matrix:          |   0   |    1   |   2
+                               ------------------------
+###                         0  | 536   |   0    |   0
+                            ---------------------------
+###                         1  |  0    |  307   |   0
+                            ----------------------------
+###                         2  |  0    |   0    |  268
+
+
 ## Floor prediction (Classification with KNN, Random Forest, and Gradient Boosting models)
 
-For the floor prediction I have used the normalized WAPs data. 
+The best performance for all three  building were achieved with Random Forest algorithm and the results are given in the following section. However, it should be noted that KNN and Gradient Boosting models are significantly faster and in floor predictions for Building 1 and Building 3 the difference in performance (about 1%) might be negligible.
 
-### Building 1 Floor prediction
-### Building 2 Floor prediction
-### Building 3 Floor prediction
+## Building 1 Floor prediction
 
+The best performance was achieved with Random Forest Algorithm. The performance and confusion matrix are shown below:
+
+### Accuracy = 0.9757
+### Kappa = 0.9657
+
+### Confusion Matrix:          |   0   |    1   |   2   |  3
+###                               --------------------------------
+###                         0  |  75   |   2    |   0   |   0
+###                            -----------------------------------
+###                         1  |   3   |  204   |   3   |   0
+###                            -----------------------------------
+###                         2  |   0   |   2    |  162  |   3
+###                            -----------------------------------                       
+###                         3  |   0   |   0    |   0   |   82
+
+
+## Building 2 Floor prediction
+
+The floor prediction for this building has the lowest performance as it was mentioned. The best achieved accuracy is 89.9%.
+The best performance was achieved with Random Forest Algorithm. The performance and confusion matrix are shown below:
+
+### Accuracy = 0.8990228
+### Kappa = 0.8520298
+
+### Confusion Matrix:          |   0   |    1   |   2   |  3
+###                               --------------------------------
+###                         0  |  25   |   3    |   0   |   0
+###                            -----------------------------------
+###                         1  |   1   |  118   |   1   |   0
+###                            -----------------------------------
+###                         2  |   4   |   22    |  85  |   2
+###                            -----------------------------------                       
+###                         3  |   0   |   0    |   1   |   45
+
+
+## Building 3 Floor prediction
+
+Performance and confusion matrix with model using Random Forest algorithm are shown below:
+
+### Accuracy = 0.9514925
+### Kappa = 0.9339376
+
+### Confusion Matrix:          |   0   |    1   |   2   |  3     |   4
+###                               ----------------------------------------
+###                         0  |  21   |   0    |   0   |   0    |   1
+###                            -------------------------------------------
+###                         1  |   3   |  110   |   0   |   0    |   0
+###                            -------------------------------------------
+###                         2  |   0   |   1    |  51   |   0    |   0
+###                            -------------------------------------------                       
+###                         3  |   0   |   0    |   3   |   40   |   5
+###                            -------------------------------------------                       
+###                         4  |   0   |   0    |   0   |   0    |   33
 
