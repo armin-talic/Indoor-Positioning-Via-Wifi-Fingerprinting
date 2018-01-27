@@ -74,7 +74,7 @@ The performance and confusion matrix of the model can be seen below:
 
 The best performance for all three  building were achieved with Random Forest algorithm and the results are given in the following section. However, it should be noted that KNN and Gradient Boosting models are significantly faster and in floor predictions for Building 1 and Building 3 the difference in performance (about 1%) might be negligible.
 
-## Building 1 Floor prediction
+### Building 1 Floor prediction
 
 The best performance was achieved with Random Forest Algorithm. The performance and confusion matrix are shown below:
 
@@ -95,7 +95,7 @@ The best performance was achieved with Random Forest Algorithm. The performance 
                          3  |   0   |   0    |   0   |   82
 
 
-## Building 2 Floor prediction
+### Building 2 Floor prediction
 
 The floor prediction for this building has the lowest performance as it was mentioned. The best achieved accuracy is 89.9%.
 The best performance was achieved with Random Forest Algorithm. The performance and confusion matrix are shown below:
@@ -117,7 +117,7 @@ The best performance was achieved with Random Forest Algorithm. The performance 
                         3  |   0   |   0    |   1   |   45
 
 
-## Building 3 Floor prediction
+### Building 3 Floor prediction
 
 Performance and confusion matrix with model using Random Forest algorithm are shown below:
 
@@ -138,4 +138,26 @@ Performance and confusion matrix with model using Random Forest algorithm are sh
                          3  |   0   |   0    |   3   |   40   |   5
                             ----------------------------------------                       
                          4  |   0   |   0    |   0   |   0    |   33
+                         
+                         
+## Coordinates prediction (Regression with KNN model)
+
+To predict the final position of a user connected to the internet from the signal strength, the regression models using KNN algorithm were used. Prediction of longitude and latitude require separate models, so finally there are 6 models (3 buildings x (longitude + latitude)).
+
+### Building 1 Coordinates prediction
+
+The performance of the model on validation set for Building 1 for longitude and latitude is shown below.
+
+Longitude KNN model performance:         
+RMSE         Rsquared       MAE 
+7.6099567    0.9397686      6.0526775
+
+Latitude KNN model performance:
+RMSE        Rsquared       MAE 
+7.1845765   0.9601064      5.0841969 
+
+The visual result of predicted coordinates and the real ones can be seen in the following figure.
+
+![building 1 result](https://user-images.githubusercontent.com/32273216/35474513-79480f44-038f-11e8-9d63-86317416a421.png)
+
 
