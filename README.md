@@ -58,18 +58,13 @@ The performance and confusion matrix of the model can be seen below:
 ### Accuracy = 1
 ### Kappa = 1
 
-First Header  | Second Header
-------------- | -------------
-Content Cell  | Content Cell
-Content Cell  | Content Cell
+### Confusion Matrix: 
 
-### Confusion Matrix:          |   0   |    1   |   2
-                               ------------------------
-###                         0  | 536   |   0    |   0
-                            ---------------------------
-###                         1  |  0    |  307   |   0
-                            ----------------------------
-###                         2  |  0    |   0    |  268
+         |   **0**  |    **1**   |    **2**
+         | -------- | -----------| --------
+ **0**   |   536  |      0     |      0
+ **1**   |     0    |     307    |      0
+ **2**   |    0    |      0     |     268
 
 
 ## Floor prediction (Classification with KNN, Random Forest, and Gradient Boosting models)
