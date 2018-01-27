@@ -9,7 +9,7 @@ The data was collected at Jaume I University.
 More information about the dataset can be found on the source link provided above. 
 
 # Objective
-My objective is to build models that predict the location (building, floor and coordinates) of a user who logs from the WAPs signal strengths. 
+My objective is to build models that predict the location (building, floor and coordinates) from the WAPs signal strengths of a user who connects to the internet at Jaume I University. 
 
 # Procedure
 I have cleaned the data, put the attributes into proper data types, subsetted dataset for each buiding, examined each column, and normalized WAPs rows in order to build models. I have used different algorithms (KNN, Random Forest, and Gradient Boosting) to predict the building, floor and coordinates of a logged in user. 
@@ -45,4 +45,27 @@ I have checked the locations were signal were in good, medium and bad range. For
 It can be seen that least amount of high WAP signals was recorded in the middle building. Later in the modeling process this will cause lower accuracy of location predictions for this building. 
 
 # Results (Machine Learning Models)
+
+I started with building the model to predict the building at which user had connected to the internet. 
+The first model had low accuracy so I decided to normalize WAPs rows put them in range from 0 to 1) and it drastically improved the model's performance. 
+
+## Building prediction (Classification with KNN model)
+
+With normalized WAP rows, the achieved accuracy is 100% for buildings' prediciton with KNN model. 
+The confusion matrix and performance of the model can be seen below:
+### Confusion Matrix:      0    1    2
+###                   0  536   0    0
+###                   1   0   307   0
+###                 2   0    0   268
+### Accuracy = 1
+### Kappa = 1
+
+## Floor prediction (Classification with KNN, Random Forest, and Gradient Boosting models)
+
+For the floor prediction I have used the normalized WAPs data. 
+
+### Building 1 Floor prediction
+### Building 2 Floor prediction
+### Building 3 Floor prediction
+
 
