@@ -77,6 +77,13 @@ The best performance was achieved with Random Forest Algorithm. The performance 
 
 ### Accuracy = 0.9757
 ### Kappa = 0.9657
+score	target
+0.202	1
+0.806	1
+0.513	1
+0.052	0
+0.329	1
+0.246	0
 
 ### Confusion Matrix:          |   0   |    1   |   2   |  3
 ###                               --------------------------------
