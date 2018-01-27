@@ -55,10 +55,11 @@ Another thing that further improved the performance of the model was choosing th
 With normalized WAP rows, the achieved accuracy is 100% for buildings' prediciton on validation set with KNN model. 
 The performance and confusion matrix of the model can be seen below:
 
-### Accuracy = 1
-### Kappa = 1
+**Accuracy = 1**
+**Kappa = 1**
 
-### Confusion Matrix: 
+**Confusion Matrix:**
+
                          |   0   |    1   |   2   
                          ------------------------
                       0  |  536  |    0   |   0   
@@ -76,9 +77,9 @@ The best performance for all three  building were achieved with Random Forest al
 
 The best performance was achieved with Random Forest Algorithm. The performance and confusion matrix are shown below:
 
-### Accuracy = 0.9757
-### Kappa = 0.9657
-### Confusion matrix:
+**Accuracy = 0.9757**
+**Kappa = 0.9657**
+**Confusion matrix:**
 
                             |   0   |    1   |   2   |  3
                             --------------------------------
@@ -96,10 +97,11 @@ The best performance was achieved with Random Forest Algorithm. The performance 
 The floor prediction for this building has the lowest performance as it was mentioned. The best achieved accuracy is 89.9%.
 The best performance was achieved with Random Forest Algorithm. The performance and confusion matrix are shown below:
 
-### Accuracy = 0.8990228
-### Kappa = 0.8520298
+**Accuracy = 0.8990228**
+**Kappa = 0.8520298**
 
-### Confusion Matrix:
+**Confusion Matrix:**
+
                            |   0   |    1   |   2   |  3
                            --------------------------------
                         0  |  25   |   3    |   0   |   0
@@ -115,10 +117,11 @@ The best performance was achieved with Random Forest Algorithm. The performance 
 
 Performance and confusion matrix with model using Random Forest algorithm are shown below:
 
-### Accuracy = 0.9514925
-### Kappa = 0.9339376
+**Accuracy = 0.9514925**
+**Kappa = 0.9339376**
 
-### Confusion Matrix:         
+**Confusion Matrix:**
+
                             |   0   |    1   |   2   |  3     |   4
                             ----------------------------------------
                          0  |  21   |   0    |   0   |   0    |   1
