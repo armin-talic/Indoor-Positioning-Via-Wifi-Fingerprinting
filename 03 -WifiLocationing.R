@@ -14,7 +14,6 @@ library(plotly)
 
 
 # Set working directory
-setwd("C:/Users/tarmi/Desktop/Ubiqum/3 - Deep analytics and visualization/3 -Evaluate Techniques for Wifi Locationing")
 
 # Import training dataset
 trainingData <- read_csv("trainingData.csv")
