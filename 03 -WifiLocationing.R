@@ -2,7 +2,7 @@
 # Armin Talic
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Libraries ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ LIBRARIES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 library(readr)
 library(dplyr)
 library(scatterplot3d)
@@ -11,6 +11,7 @@ library(corrplot)
 library(caret)
 library(som)
 library(plotly)
+library(data.table)
 
 
 # Set working directory
@@ -20,6 +21,9 @@ trainingData <- read_csv("trainingData.csv")
 
 # Import validation dataset
 testData <- read_csv("validationData.csv")
+
+# Indoor locationing via wifi fingerprinting
+# Armin Talic
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ DATA PREPROCESSING ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -86,7 +90,7 @@ ggplot() +
   xlab("WAP strength")
 
 
-# ~~~~~~~~~~~~~~~~~ Check distribution of how many WAPs have signal ~~~~~~~~~~~~~~~~~~~~
+# Check distribution of how many WAPs have signal
 # TRAINING SET
 trainingData$count <- rowSums(trainingData[, 1:465] != 0)
 ggplot(trainingData, aes(count, fill = as.factor(trainingData$BUILDINGID))) +
@@ -118,6 +122,14 @@ testData$LATITUDE <- testData$LATITUDE - min(testData$LATITUDE)
 trainingData$LONGITUDE <- trainingData$LONGITUDE - min(trainingData$LONGITUDE)
 testData$LONGITUDE <- testData$LONGITUDE - min(testData$LONGITUDE)
 
+# check maximum values for longitude and latitude in training and test sets
+max(trainingData$LONGITUDE)
+max(testData$LONGITUDE)
+#remove all rows where LONGITUDE values from test set that are higher than in train set
+testData<-testData[!(testData$LONGITUDE > 390.5194), ]
+
+#max(trainingData$LATITUDE)
+#max(testData$LATITUDE)
 
 # Locations at which users logged in 
 # Red colour is outside the room, black inside
@@ -135,8 +147,8 @@ ggplot() +
   geom_point(data = testData, aes(x = LONGITUDE, y = LATITUDE, colour = "Test dataset")) +
   ggtitle("Log In Locations (Training and Test sets)") 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  MODEL TO PREDICT BUILDING ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    Split Training and Test sets  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# MODEL TO PREDICT BUILDING 
+# Split Training and Test sets 
 
 training <- trainingData[ ,1:469]
 
@@ -153,12 +165,12 @@ trainIndex <- createDataPartition(y = training$BUILDINGID, p = 0.75,
                                   list = FALSE)
 
 
-#                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~    Training and Test sets  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Training and Test sets 
 
 trainSet <- training [trainIndex,]
 testSet <- training [-trainIndex,]
 
-#                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~    K-NN    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# K-NN
 
 df <- trainSet
 
@@ -169,7 +181,6 @@ knnFit <- train((BUILDINGID ~ .), data = df, method = "knn", trControl = ctrl, t
 
 #Output of kNN fit
 knnFit 
-#write.csv(knnFit, file = 'knnperformance.csv')
 
 # test the k-NN model
 knnPredict <- predict(knnFit,newdata = testSet)
@@ -192,7 +203,9 @@ knnCM
 #                 2   0    0   268
 # Accuracy 1
 # Kappa 1
-#  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Create dataset for each building and floor ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+# Create dataset for each building and floor
 # Create a dataset for each building
 Building1 <- subset(trainingData, BUILDINGID == 0)
 Building2 <- subset(trainingData, BUILDINGID == 1)
@@ -215,13 +228,12 @@ Building2 <- subset(Building2, select=uniquelength>1)
 uniquelength <- sapply(Building3,function(x) length(unique(x)))
 Building3 <- subset(Building3, select=uniquelength>1)
 
-
-
-# # Building 1
- Building1Floor1 <- subset(Building1, FLOOR == 0)
- Building1Floor2 <- subset(Building1, FLOOR == 1)
- Building1Floor3 <- subset(Building1, FLOOR == 2)
- Building1Floor4 <- subset(Building1, FLOOR == 3)
+# 3D scatterplot of floors and log in locations
+# # # Building 1
+#  Building1Floor1 <- subset(Building1, FLOOR == 0)
+#  Building1Floor2 <- subset(Building1, FLOOR == 1)
+#  Building1Floor3 <- subset(Building1, FLOOR == 2)
+#  Building1Floor4 <- subset(Building1, FLOOR == 3)
 
 # # Building 2
 # Building2Floor1 <- subset(Building2, FLOOR == 0)
@@ -256,21 +268,21 @@ unique(Building1$PHONEID) # 2 different phone IDs
 # length(unique(Building3$USERID)) # 16 different user IDs
 # length(unique(Building3$PHONEID)) # 15 different phone IDs
 
-# Plots
-# Building 1
-Building1Floor1$z <- 1
-Building1Floor2$z <- 2
-Building1Floor3$z <- 3
-Building1Floor4$z <- 4
-
-buildplot1 <- rbind(Building1Floor1,Building1Floor2)
-buildplot1 <- rbind(buildplot1, Building1Floor3)
-buildplot1 <- rbind(buildplot1, Building1Floor4)
-buildplot1 <- buildplot1[,521:530]
-z <- buildplot1$z
-x <- buildplot1$LONGITUDE
-y <- buildplot1$LATITUDE
-scatterplot3d(x, y, z, pch = 20, angle = 45, color = buildplot1$RELATIVEPOSITION, main = "Building 1 Log In points")
+# # Plots
+# # Building 1
+# Building1Floor1$z <- 1
+# Building1Floor2$z <- 2
+# Building1Floor3$z <- 3
+# Building1Floor4$z <- 4
+# 
+# buildplot1 <- rbind(Building1Floor1,Building1Floor2)
+# buildplot1 <- rbind(buildplot1, Building1Floor3)
+# buildplot1 <- rbind(buildplot1, Building1Floor4)
+# buildplot1 <- buildplot1[,521:530]
+# z <- buildplot1$z
+# x <- buildplot1$LONGITUDE
+# y <- buildplot1$LATITUDE
+# scatterplot3d(x, y, z, pch = 20, angle = 45, color = buildplot1$RELATIVEPOSITION, main = "Building 1 Log In points")
 
 # # Building 2
 # Building2Floor1$z <- 1
@@ -305,7 +317,7 @@ scatterplot3d(x, y, z, pch = 20, angle = 45, color = buildplot1$RELATIVEPOSITION
 # scatterplot3d(a, b, c, angle = 20, pch = buildplot3$z, color = buildplot3$RELATIVEPOSITION)
 
 
-# Find where is the highest signal strength
+# Check where is the highest signal strength
 which(Building3[,1:119] == 105)
 which(Building3[,1:119] == 105, arr.ind=TRUE)
 
@@ -314,7 +326,10 @@ abc <- which(apply(trainingData[, 1:465], 1, function(x) length(which(x > 60))) 
 GoodSignal <- trainingData[abc, ]
 
 gs <- ggplot(GoodSignal, aes(GoodSignal$LONGITUDE, GoodSignal$LATITUDE))
-gs + geom_point(colour = as.factor(GoodSignal$RELATIVEPOSITION))
+gs + geom_point(colour = as.factor(GoodSignal$RELATIVEPOSITION)) +
+  ggtitle("Log in locations where WAP signal was high") +
+  xlab("Longitude") +
+  ylab("Latitude")
 
 
 # Remove columns (WAP) where all the values = 0 (WAP was not detected)
@@ -341,10 +356,10 @@ bs <- ggplot(BadSignal, aes(BadSignal$LONGITUDE, BadSignal$LATITUDE))
 bs + geom_point(colour = as.factor(BadSignal$RELATIVEPOSITION))
 
 
-# ~~~~~~~~~~~~~~~~~  THIS MODEL HAS LOW PERFORMACE SINCE THE DATA IS NOT NORMALIZED ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# THE FOLLOWING MODEL HAS LOW PERFORMACE SINCE THE DATA IS NOT NORMALIZED 
 
-# # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  Build model to predict Floor for Building 1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    Split Training and Test sets  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Build model to predict Floor for Building 1 
+# Split Training and Test sets
 # 
 # Building1 <- subset(trainingData, BUILDINGID == 0)
 # # Remove columns (WAP) where all the values = 0 (WAP was not detected)
@@ -476,38 +491,43 @@ bs + geom_point(colour = as.factor(BadSignal$RELATIVEPOSITION))
 
 # ONCE THE KNN MODEL IS BUILT WITH NORMALIZED DATA, RANDOM FOREST AND GRADIENT BOOSTING MODEL
 # ARE USED WITH THE NORMALIZED DATA
-#             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~   Random Forest   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# #             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~   Random Forest   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 
+# set.seed(123)
+# ctrl <- trainControl(method="cv", number = 10) 
+# 
+# # Random forest
+# rfFit <- train(FLOOR ~ ., data = trainSet, method = "rf", trControl = ctrl, preProcess = c("center","scale"), tuneLength = 1)
+# rfPredict <- predict(rfFit, newdata = testSet)
+# rfCM <- confusionMatrix(rfPredict, testSet$FLOOR)
+# 
+# rfPredicttest <- predict(rfFit, newdata = validation)
+# postResample(rfPredicttest, validation$FLOOR)
+# 
+# rfCM <-confusionMatrix(rfPredicttest, validation$FLOOR)
+# rfCM
+# 
+# # Performance Accuracy     Kappa 
+# #             0.4050405 0.2021011 
+# 
+# #             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~  eXtreme Gradient Boosting  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 
+# set.seed(123)
+# ctrl <- trainControl(method="cv", number = 10) 
+# 
+# # Random forest
+# GBFit <- train(FLOOR ~ ., data = trainSet, method = "xgbTree", trControl = ctrl, tuneLength = 1)
+# GBPredict <- predict(GBFit, newdata = testSet)
+# rfCM <- confusionMatrix(GBPredict, testSet$FLOOR)
+# 
+# GBPredicttest <- predict(GBFit, newdata = validation)
+# postResample(GBPredicttest, validation$FLOOR)
+# # Performance Accuracy     Kappa 
+# #            0.5499550 0.3281139 
 
-set.seed(123)
-ctrl <- trainControl(method="cv", number = 10) 
 
-# Random forest
-rfFit <- train(FLOOR ~ ., data = trainSet, method = "rf", trControl = ctrl, preProcess = c("center","scale"), tuneLength = 1)
-rfPredict <- predict(rfFit, newdata = testSet)
-rfCM <- confusionMatrix(rfPredict, testSet$FLOOR)
-
-rfPredicttest <- predict(rfFit, newdata = validation)
-postResample(rfPredicttest, validation$FLOOR)
-# Performance Accuracy     Kappa 
-#             0.4050405 0.2021011 
-
-#             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~  eXtreme Gradient Boosting  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-set.seed(123)
-ctrl <- trainControl(method="cv", number = 10) 
-
-# Random forest
-GBFit <- train(FLOOR ~ ., data = trainSet, method = "xgbTree", trControl = ctrl, tuneLength = 1)
-GBPredict <- predict(GBFit, newdata = testSet)
-rfCM <- confusionMatrix(GBPredict, testSet$FLOOR)
-
-GBPredicttest <- predict(GBFit, newdata = validation)
-postResample(GBPredicttest, validation$FLOOR)
-# Performance Accuracy     Kappa 
-#            0.5499550 0.3281139 
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Model with scaled data (0 to 1) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ BUILDING 1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Model with scaled data (0 to 1)
+# BUILDING 1
 try <- Building1[,1:200]
 # Remove columns (WAP) where all the values = 0 (WAP was not detected)
 uniquelength <- sapply(try,function(x) length(unique(x)))
@@ -578,22 +598,59 @@ checkMeans[is.na(checkMeans)] <- 0
 df <- checkMeans
 
 
+# set.seed(123)
+# ctrl <- trainControl(method="cv",number = 10) 
+# knnFit <- train((FLOOR ~ .), data = df, method = "knn", trControl = ctrl, tuneLength = 5)
+# 
+# #Output of kNN fit
+# knnFit 
+# #write.csv(knnFit, file = 'knnperformance.csv')
+# 
+# # test the k-NN model
+# knnPredict <- predict(knnFit,newdata = testSet)
+# postResample(knnPredict, testSet$FLOOR)
+# 
+# # Check results on validation dataset
+# # Apply k-NN model to the validation data
+# knnPredicttest <- predict(knnFit,newdata = validation)
+# postResample(knnPredicttest, validation$FLOOR)
+# 
+# knnCM <-confusionMatrix(knnPredicttest, validation$FLOOR)
+# knnCM
+
+#             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~   Random Forest   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 set.seed(123)
-ctrl <- trainControl(method="cv",number = 10) 
-knnFit <- train((FLOOR ~ .), data = df, method = "knn", trControl = ctrl, tuneLength = 5)
+ctrl <- trainControl(method="cv", number = 5) 
 
-#Output of kNN fit
-knnFit 
-#write.csv(knnFit, file = 'knnperformance.csv')
+# Random forest
+rfFit <- train(FLOOR ~ ., data = trainSet, method = "rf", trControl = ctrl, preProcess = c("center","scale"), tuneLength = 1)
+rfPredict <- predict(rfFit, newdata = testSet)
+rfCM <- confusionMatrix(rfPredict, testSet$FLOOR)
+plot(rfFit$finalModel)
 
-# test the k-NN model
-knnPredict <- predict(knnFit,newdata = testSet)
-postResample(knnPredict, testSet$FLOOR)
+rfPredicttest <- predict(rfFit, newdata = validation)
+postResample(rfPredicttest, validation$FLOOR)
 
-# Check results on validation dataset
-# Apply k-NN model to the validation data
-knnPredicttest <- predict(knnFit,newdata = validation)
-postResample(knnPredicttest, validation$FLOOR)
+rfCM <-confusionMatrix(rfPredicttest, validation$FLOOR)
+rfCM
+
+
+# #             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~  eXtreme Gradient Boosting  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 
+# set.seed(123)
+# ctrl <- trainControl(method="cv", number = 10) 
+# 
+# # Random forest
+# GBFit <- train(FLOOR ~ ., data = trainSet, method = "xgbTree", trControl = ctrl, tuneLength = 1)
+# GBPredict <- predict(GBFit, newdata = testSet)
+# rfCM <- confusionMatrix(GBPredict, testSet$FLOOR)
+# 
+# GBPredicttest <- predict(GBFit, newdata = validation)
+# postResample(GBPredicttest, validation$FLOOR)
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PERFORMANCE FOR FLOORS OF BUILDING 1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # ~~~~~~~~~~~~ KNN ~~~~~~~~~~~~~~
 # Performance Accuracy     Kappa 
@@ -605,11 +662,10 @@ postResample(knnPredicttest, validation$FLOOR)
 
 # ~~~~~~~~~~~~ Random Forest ~~~~~~~~~~~~~~
 # Performance Accuracy     Kappa 
-#             0.9757463 0.9656892 
+#             0.9757      0.9657 
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Model with scaled data (0 to 1) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ BUILDING 2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# BUILDING 2 
 try <- Building2[,1:207]
 # Remove columns (WAP) where all the values = 0 (WAP was not detected)
 uniquelength <- sapply(try,function(x) length(unique(x)))
@@ -680,22 +736,55 @@ checkMeans[is.na(checkMeans)] <- 0
 df <- checkMeans
 
 
+# set.seed(123)
+# ctrl <- trainControl(method="cv",number = 10) 
+# knnFit <- train((FLOOR ~ .), data = df, method = "knn", trControl = ctrl, tuneLength = 5)
+# 
+# #Output of kNN fit
+# knnFit 
+# #write.csv(knnFit, file = 'knnperformance.csv')
+# 
+# # test the k-NN model
+# knnPredict <- predict(knnFit,newdata = testSet)
+# postResample(knnPredict, testSet$FLOOR)
+# 
+# # Check results on validation dataset
+# # Apply k-NN model to the validation data
+# knnPredicttest <- predict(knnFit,newdata = validation)
+# postResample(knnPredicttest, validation$FLOOR)
+
+#             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~   Random Forest   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 set.seed(123)
-ctrl <- trainControl(method="cv",number = 10) 
-knnFit <- train((FLOOR ~ .), data = df, method = "knn", trControl = ctrl, tuneLength = 5)
+ctrl <- trainControl(method="cv", number = 10) 
 
-#Output of kNN fit
-knnFit 
-#write.csv(knnFit, file = 'knnperformance.csv')
+# Random forest
+rfFit <- train(FLOOR ~ ., data = trainSet, method = "rf", trControl = ctrl, preProcess = c("center","scale"), tuneLength = 1)
+plot(rfFit$finalModel)
+rfPredict <- predict(rfFit, newdata = testSet)
+rfCM <- confusionMatrix(rfPredict, testSet$FLOOR)
 
-# test the k-NN model
-knnPredict <- predict(knnFit,newdata = testSet)
-postResample(knnPredict, testSet$FLOOR)
+rfPredicttest <- predict(rfFit, newdata = validation)
+postResample(rfPredicttest, validation$FLOOR)
 
-# Check results on validation dataset
-# Apply k-NN model to the validation data
-knnPredicttest <- predict(knnFit,newdata = validation)
-postResample(knnPredicttest, validation$FLOOR)
+rfCM <-confusionMatrix(rfPredicttest, validation$FLOOR)
+rfCM
+
+
+# #             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~  eXtreme Gradient Boosting  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 
+# set.seed(123)
+# ctrl <- trainControl(method="cv", number = 10) 
+# 
+# # Random forest
+# GBFit <- train(FLOOR ~ ., data = trainSet, method = "xgbTree", trControl = ctrl, tuneLength = 1)
+# GBPredict <- predict(GBFit, newdata = testSet)
+# rfCM <- confusionMatrix(GBPredict, testSet$FLOOR)
+# 
+# GBPredicttest <- predict(GBFit, newdata = validation)
+# postResample(GBPredicttest, validation$FLOOR)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PERFORMANCE FOR FLOORS OF BUILDING 2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # ~~~~~~~~~~~~ KNN ~~~~~~~~~~~~~~
 # Performance Accuracy     Kappa 
@@ -711,8 +800,7 @@ postResample(knnPredicttest, validation$FLOOR)
 
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Model with scaled data (0 to 1) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ BUILDING 3 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# BUILDING 3 
 try <- Building3[,1:203]
 # Remove columns (WAP) where all the values = 0 (WAP was not detected)
 uniquelength <- sapply(try,function(x) length(unique(x)))
@@ -754,7 +842,7 @@ validation <-  validation[keep, ]
 cols_to_keep <- intersect(colnames(training),colnames(validation))
 training <- training[,cols_to_keep, drop=FALSE]
 validation <- validation[,cols_to_keep, drop=FALSE]
-validation <- as.data.frame(t(apply(validation[,1:106], 1, function(x) (x - min(x))/(max(x)-min(x)))))
+validation <- as.data.frame(t(apply(validation[,1:104], 1, function(x) (x - min(x))/(max(x)-min(x)))))
 
 validation$FLOOR <- testData3$FLOOR
 validation$FLOOR <- factor(validation$FLOOR)
@@ -774,32 +862,66 @@ testSet <- training [-trainIndex,]
 df <- trainSet
 
 checkMeans <- df
-checkMeans[,1:106][checkMeans[,1:106] == 0] <- NA
-rowMeans(checkMeans[,1:106], na.rm = T)
+checkMeans[,1:104][checkMeans[,1:104] == 0] <- NA
+rowMeans(checkMeans[,1:104], na.rm = T)
 # Keep only rows where mean value of detected WAPs is more than 0.5
-checkMeans <- subset(checkMeans, rowMeans(checkMeans[,1:106], na.rm = T) > 0.6)
+checkMeans <- subset(checkMeans, rowMeans(checkMeans[,1:104], na.rm = T) > 0.6)
 checkMeans[is.na(checkMeans)] <- 0
 
 df <- checkMeans
 
 
+# set.seed(123)
+# ctrl <- trainControl(method="cv",number = 10) 
+# knnFit <- train((FLOOR ~ .), data = df, method = "knn", trControl = ctrl, tuneLength = 5)
+# 
+# #Output of kNN fit
+# knnFit 
+# #write.csv(knnFit, file = 'knnperformance.csv')
+# 
+# # test the k-NN model
+# knnPredict <- predict(knnFit,newdata = testSet)
+# postResample(knnPredict, testSet$FLOOR)
+# 
+# # Check results on validation dataset
+# # Apply k-NN model to the validation data
+# knnPredicttest <- predict(knnFit,newdata = validation)
+# postResample(knnPredicttest, validation$FLOOR)
+
+#             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~   Random Forest   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 set.seed(123)
-ctrl <- trainControl(method="cv",number = 10) 
-knnFit <- train((FLOOR ~ .), data = df, method = "knn", trControl = ctrl, tuneLength = 5)
+ctrl <- trainControl(method="cv", number = 10) 
 
-#Output of kNN fit
-knnFit 
-#write.csv(knnFit, file = 'knnperformance.csv')
+# Random forest
+rfFit <- train(FLOOR ~ ., data = trainSet, method = "rf", trControl = ctrl, preProcess = c("center","scale"), tuneLength = 1)
+# variables importance 
+varImp(rfFit)
 
-# test the k-NN model
-knnPredict <- predict(knnFit,newdata = testSet)
-postResample(knnPredict, testSet$FLOOR)
+rfPredict <- predict(rfFit, newdata = testSet)
+rfCM <- confusionMatrix(rfPredict, testSet$FLOOR)
 
-# Check results on validation dataset
-# Apply k-NN model to the validation data
-knnPredicttest <- predict(knnFit,newdata = validation)
-postResample(knnPredicttest, validation$FLOOR)
+rfPredicttest <- predict(rfFit, newdata = validation)
+postResample(rfPredicttest, validation$FLOOR)
 
+# Confusion matrix of validation test prediction
+rfCM <-confusionMatrix(rfPredicttest, validation$FLOOR)
+rfCM
+
+# #             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~  eXtreme Gradient Boosting  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 
+# set.seed(123)
+# ctrl <- trainControl(method="cv", number = 10) 
+# 
+# # Random forest
+# GBFit <- train(FLOOR ~ ., data = trainSet, method = "xgbTree", trControl = ctrl, tuneLength = 1)
+# GBPredict <- predict(GBFit, newdata = testSet)
+# rfCM <- confusionMatrix(GBPredict, testSet$FLOOR)
+# 
+# GBPredicttest <- predict(GBFit, newdata = validation)
+# postResample(GBPredicttest, validation$FLOOR)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PERFORMANCE FOR FLOORS OF BUILDING 3 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # ~~~~~~~~~~~~ KNN ~~~~~~~~~~~~~~
 # Performance Accuracy     Kappa 
 #             0.8395522 0.7829142   
@@ -819,9 +941,8 @@ postResample(knnPredicttest, validation$FLOOR)
 # n1 = 536, n2 = 307, n3 = 268
 # ACCURACY = 0.94869487524 = 94.86 %
 
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PREDICT COORDINATES OF BUILDING 1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ LONGITUDE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PREDICT COORDINATES OF BUILDING 1
+#LONGITUDE
 try <- Building1[,1:200]
 # Remove columns (WAP) where all the values = 0 (WAP was not detected)
 uniquelength <- sapply(try,function(x) length(unique(x)))
@@ -868,7 +989,7 @@ validation <- as.data.frame(t(apply(validation[,1:139], 1, function(x) (x - min(
 validation$LONGITUDE <- testData1$LONGITUDE
 validation$LONGITUDE <- validation$LONGITUDE
 
-#write.csv(validation, file = 'validationLONG.csv')
+validationLONG <- as.data.frame(testData1$LONGITUDE)
 
 set.seed(123)
 trainIndex <- createDataPartition(y = training$LONGITUDE, p = 0.75,
@@ -900,7 +1021,6 @@ knnFit <- train((LONGITUDE ~ .), data = df, method = "knn", trControl = ctrl, tu
 
 #Output of kNN fit
 knnFit 
-#write.csv(knnFit, file = 'knnperformance.csv')
 
 # test the k-NN model
 knnPredict <- predict(knnFit,newdata = testSet)
@@ -913,13 +1033,14 @@ postResample(knnPredicttest, validation$LONGITUDE)
 
 #              ~~~~~~~~~~~~ KNN ~~~~~~~~~~~~~~
 # Performance   RMSE      Rsquared       MAE 
-#              7.6099567  0.9397686     6.0526775 
+#              7.598773   0.939573     6.044276
 
 
 # Save results in csv file
 #write.csv(knnPredicttest, file = "knnPredict.csv")
+LongPred1 <- as.data.frame(knnPredicttest)
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ LATITUDE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# LATITUDE 
 try <- Building1[,1:200]
 # Remove columns (WAP) where all the values = 0 (WAP was not detected)
 uniquelength <- sapply(try,function(x) length(unique(x)))
@@ -966,7 +1087,12 @@ validation <- as.data.frame(t(apply(validation[,1:139], 1, function(x) (x - min(
 validation$LATITUDE <- testData1$LATITUDE
 validation$LATITUDE <- validation$LATITUDE
 
-#write.csv(validation, file = 'validationLAT.csv')
+validationLAT <- as.data.frame(testData1$LATITUDE)
+validationLONGLAT <- as.data.frame(c(validationLONG, validationLAT))
+# Change the column names of validationLONGLAT
+colnames(validationLONGLAT)[1] <- "LONGITUDE"
+colnames(validationLONGLAT)[2] <- "LATITUDE"
+
 
 set.seed(123)
 trainIndex <- createDataPartition(y = training$LATITUDE, p = 0.75,
@@ -1015,13 +1141,22 @@ postResample(knnPredicttest, validation$LATITUDE)
 
 # Save results in csv file
 #write.csv(knnPredicttest, file = "knnPredictLAT.csv")
+LatPred1 <- as.data.frame(knnPredicttest)
+LONGLAT_PREDICTIONS <- as.data.frame(c(LongPred1, LatPred1))
+
+# change column names
+colnames(LONGLAT_PREDICTIONS)[1] <- 'LONGITUDE'
+colnames(LONGLAT_PREDICTIONS)[2] <- 'LATITUDE'
 
 # Plot real and predicted results
-LONGLAT_PREDICTIONS <- read_csv("LONGLAT PREDICTIONS.csv")
-validationLONGLAT <- read_csv("validationLONGLAT.csv")
-
 # Training and Validation log in locations
 ggplot() +
   geom_point(data = LONGLAT_PREDICTIONS , aes(x = LONGITUDE, y = LATITUDE, colour = "Predictions")) +
   geom_point(data = validationLONGLAT , aes(x = LONGITUDE, y = LATITUDE, colour = "Real values")) +
   ggtitle("Log In Locations") 
+
+# Distribution of distance error (in meters)
+Error = sqrt((LONGLAT_PREDICTIONS$LONGITUDE - validationLONGLAT$LONGITUDE)^2 +(LONGLAT_PREDICTIONS$LATITUDE - validationLONGLAT$LATITUDE)^2)
+hist(Error, freq = T, xlab = " Absolute error (m)", col = "red", main = "Error distance in meters (Building 1)")
+
+
