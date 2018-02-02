@@ -32,7 +32,7 @@ The coordinates in the dataset are given in World Geodetic System form as Longit
 
 Log In locations of users from trainining and validation sets as well as a google map screenshot of the buildings of Jaume I University are shown in the figure below.
 
-![06 - log in locations](https://user-images.githubusercontent.com/32273216/35473432-edf81dc0-0380-11e8-9bb4-f95b8305ffd2.png)
+![university plot and google map](https://user-images.githubusercontent.com/32273216/35731801-5dd3c500-0817-11e8-87db-f3becb150b52.jpg)
 
 The following figure shows the log in locations of users at each floor in Building 1 from the training set. 
 
