@@ -1,5 +1,5 @@
 # Indoor-Positioning-Via-Wifi-Fingerprinting
-Predicting peoples' location (Building, Floor and Coordinates) from WAPs signal information using classification and regression machine learning algorithms (K-NN, Gradient boosting, and Random Forest)
+Predicting people's location (Building, Floor and Coordinates) from WAPs signal information using classification and regression machine learning algorithms (K-NN, Gradient boosting, and Random Forest)
 
 # About the datasets
 Source od the datasets: http://archive.ics.uci.edu/ml/datasets/UJIIndoorLoc
@@ -158,4 +158,6 @@ The visual result of predicted coordinates and the real ones can be seen in the 
 
 ![building 1 result](https://user-images.githubusercontent.com/32273216/35474513-79480f44-038f-11e8-9d63-86317416a421.png)
 
+The distribution of the distance error in meters is shown in the figure below.
 
+![error distance building 1](https://user-images.githubusercontent.com/32273216/35739048-bd968374-0830-11e8-8b4e-dce516da2421.png)
