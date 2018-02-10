@@ -10,7 +10,6 @@ library(ggplot2)
 library(corrplot)
 library(caret)
 library(som)
-library(plotly)
 library(data.table)
 
 
@@ -21,10 +20,6 @@ trainingData <- read_csv("trainingData.csv")
 
 # Import validation dataset
 testData <- read_csv("validationData.csv")
-
-# Indoor locationing via wifi fingerprinting
-# Armin Talic
-
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ DATA PREPROCESSING ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1158,5 +1153,454 @@ ggplot() +
 # Distribution of distance error (in meters)
 Error = sqrt((LONGLAT_PREDICTIONS$LONGITUDE - validationLONGLAT$LONGITUDE)^2 +(LONGLAT_PREDICTIONS$LATITUDE - validationLONGLAT$LATITUDE)^2)
 hist(Error, freq = T, xlab = " Absolute error (m)", col = "red", main = "Error distance in meters (Building 1)")
+
+# PREDICT COORDINATES OF BUILDING 2
+#LONGITUDE
+try <- Building2[,1:207]
+# Remove columns (WAP) where all the values = 0 (WAP was not detected)
+uniquelength <- sapply(try,function(x) length(unique(x)))
+try <- subset(try, select=uniquelength>1)
+# Remove rows (WAP) where all the values = 0 (WAP was not detected)
+keep <- apply(try[,1:207], 1, function(x) length(unique(x[!is.na(x)])) != 1)
+try <-  try[keep, ]
+
+# Normalize the data
+data_norm <- as.data.frame(t(apply(try, 1, function(x) (x - min(x))/(max(x)-min(x)))))
+
+
+# Build knn model
+uniquelength <- sapply(Building2,function(x) length(unique(x)))
+Building2 <- subset(Building2, select=uniquelength>1)
+# Remove rows (WAP) where all the values = 0 (WAP was not detected)
+keep <- apply(Building2[,1:207], 1, function(x) length(unique(x[!is.na(x)])) != 1)
+Building2 <-  Building2[keep, ]
+
+Building2[,1:207] <- data_norm
+
+Building2$LONGITUDE <- Building2$LONGITUDE
+cols <- c(1:208)
+training <- Building2[ , cols]
+training$LONGITUDE <- training$LONGITUDE
+
+# Import validation dataset
+validation <- subset(testData, BUILDINGID == 1)
+testData2 <- subset(testData, BUILDINGID == 1)
+
+# Remove columns (WAP) where all the values = 0 (WAP was not detected)
+uniquelength <- sapply(validation,function(x) length(unique(x)))
+validation <- subset(validation, select=uniquelength>1)
+# Remove rows (WAP) where all the values = 0 (WAP was not detected)
+keep <- apply(validation[,1:170], 1, function(x) length(unique(x[!is.na(x)])) != 1)
+validation <-  validation[keep, ]
+
+# Drop columns from validation that do not match with traning set
+cols_to_keep <- intersect(colnames(training),colnames(validation))
+training <- training[,cols_to_keep, drop=FALSE]
+validation <- validation[,cols_to_keep, drop=FALSE]
+validation <- as.data.frame(t(apply(validation[,1:146], 1, function(x) (x - min(x))/(max(x)-min(x)))))
+
+validation$LONGITUDE <- testData2$LONGITUDE
+validation$LONGITUDE <- validation$LONGITUDE
+
+validationLONG <- as.data.frame(testData2$LONGITUDE)
+
+set.seed(123)
+trainIndex <- createDataPartition(y = training$LONGITUDE, p = 0.75,
+                                  list = FALSE)
+
+
+#                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~    Training and Test sets  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+trainSet <- training [trainIndex,]
+testSet <- training [-trainIndex,]
+
+#                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~    K-NN    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+df <- trainSet
+
+checkMeans <- df
+checkMeans[,1:146][checkMeans[,1:146] == 0] <- NA
+rowMeans(checkMeans[,1:146], na.rm = T)
+# Keep only rows where mean value of detected WAPs is more than 0.5
+checkMeans <- subset(checkMeans, rowMeans(checkMeans[,1:146], na.rm = T) > 0.6)
+checkMeans[is.na(checkMeans)] <- 0
+
+df <- checkMeans
+
+
+set.seed(123)
+ctrl <- trainControl(method="cv",number = 10) 
+knnFit <- train((LONGITUDE ~ .), data = df, method = "knn", trControl = ctrl, tuneLength = 5)
+
+#Output of kNN fit
+knnFit 
+
+# test the k-NN model
+knnPredict <- predict(knnFit,newdata = testSet)
+postResample(knnPredict, testSet$LONGITUDE)
+
+# Check results on validation dataset
+# Apply k-NN model to the validation data
+knnPredicttest <- predict(knnFit,newdata = validation)
+postResample(knnPredicttest, validation$LONGITUDE)
+
+#              ~~~~~~~~~~~~ KNN ~~~~~~~~~~~~~~
+# Performance   RMSE      Rsquared       MAE 
+#              9.385072  0.965634      7.114257
+
+
+# Save results in csv file
+#write.csv(knnPredicttest, file = "knnPredict.csv")
+LongPred2 <- as.data.frame(knnPredicttest)
+
+# LATITUDE 
+try <- Building2[,1:207]
+# Remove columns (WAP) where all the values = 0 (WAP was not detected)
+uniquelength <- sapply(try,function(x) length(unique(x)))
+try <- subset(try, select=uniquelength>1)
+# Remove rows (WAP) where all the values = 0 (WAP was not detected)
+keep <- apply(try[,1:207], 1, function(x) length(unique(x[!is.na(x)])) != 1)
+try <-  try[keep, ]
+
+# Normalize the data
+data_norm <- as.data.frame(t(apply(try, 1, function(x) (x - min(x))/(max(x)-min(x)))))
+
+
+# Build knn model
+uniquelength <- sapply(Building2,function(x) length(unique(x)))
+Building2 <- subset(Building2, select=uniquelength>1)
+# Remove rows (WAP) where all the values = 0 (WAP was not detected)
+keep <- apply(Building2[,1:207], 1, function(x) length(unique(x[!is.na(x)])) != 1)
+Building2 <-  Building2[keep, ]
+
+Building2[,1:207] <- data_norm
+
+Building2$LATITUDE <- Building2$LATITUDE
+cols <- c(1:207, 209)
+training <- Building2[ , cols]
+training$LATITUDE <- training$LATITUDE
+
+# Import validation dataset
+validation <- subset(testData, BUILDINGID == 1)
+testData2 <- subset(testData, BUILDINGID == 1)
+
+# Remove columns (WAP) where all the values = 0 (WAP was not detected)
+uniquelength <- sapply(validation,function(x) length(unique(x)))
+validation <- subset(validation, select=uniquelength>1)
+# Remove rows (WAP) where all the values = 0 (WAP was not detected)
+keep <- apply(validation[,1:170], 1, function(x) length(unique(x[!is.na(x)])) != 1)
+validation <-  validation[keep, ]
+
+# Drop columns from validation that do not match with traning set
+cols_to_keep <- intersect(colnames(training),colnames(validation))
+training <- training[,cols_to_keep, drop=FALSE]
+validation <- validation[,cols_to_keep, drop=FALSE]
+validation <- as.data.frame(t(apply(validation[,1:146], 1, function(x) (x - min(x))/(max(x)-min(x)))))
+
+validation$LATITUDE <- testData2$LATITUDE
+validation$LATITUDE <- validation$LATITUDE
+
+validationLAT <- as.data.frame(testData2$LATITUDE)
+validationLONG <- as.data.frame(testData2$LONGITUDE)
+validationLONGLAT <- as.data.frame(c(validationLONG, validationLAT))
+# Change the column names of validationLONGLAT
+colnames(validationLONGLAT)[1] <- "LONGITUDE"
+colnames(validationLONGLAT)[2] <- "LATITUDE"
+
+set.seed(123)
+trainIndex <- createDataPartition(y = training$LONGITUDE, p = 0.75,
+                                  list = FALSE)
+
+
+#                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~    Training and Test sets  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+trainSet <- training [trainIndex,]
+testSet <- training [-trainIndex,]
+
+#                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~    K-NN    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+df <- trainSet
+
+checkMeans <- df
+checkMeans[,1:146][checkMeans[,1:146] == 0] <- NA
+rowMeans(checkMeans[,1:146], na.rm = T)
+# Keep only rows where mean value of detected WAPs is more than 0.5
+checkMeans <- subset(checkMeans, rowMeans(checkMeans[,1:146], na.rm = T) > 0.6)
+checkMeans[is.na(checkMeans)] <- 0
+
+df <- checkMeans
+
+
+set.seed(123)
+ctrl <- trainControl(method="cv",number = 10) 
+knnFit <- train((LATITUDE ~ .), data = df, method = "knn", trControl = ctrl, tuneLength = 5)
+
+#Output of kNN fit
+knnFit 
+
+# test the k-NN model
+knnPredict <- predict(knnFit,newdata = testSet)
+postResample(knnPredict, testSet$LATITUDE)
+
+# Check results on validation dataset
+# Apply k-NN model to the validation data
+knnPredicttest <- predict(knnFit,newdata = validation)
+postResample(knnPredicttest, validation$LATITUDE)
+
+#              ~~~~~~~~~~~~ KNN ~~~~~~~~~~~~~~
+# Performance    RMSE       Rsquared       MAE 
+#               11.4652267  0.9069251  8.1506292 
+
+# Save results in csv file
+#write.csv(knnPredicttest, file = "knnPredictLAT.csv")
+LatPred2 <- as.data.frame(knnPredicttest)
+LONGLAT_PREDICTIONS <- as.data.frame(c(LongPred2, LatPred2))
+
+# change column names
+colnames(LONGLAT_PREDICTIONS)[1] <- 'LONGITUDE'
+colnames(LONGLAT_PREDICTIONS)[2] <- 'LATITUDE'
+
+# Plot real and predicted results
+# Training and Validation log in locations
+ggplot() +
+  geom_point(data = LONGLAT_PREDICTIONS , aes(x = LONGITUDE, y = LATITUDE, colour = "Predictions")) +
+  geom_point(data = validationLONGLAT , aes(x = LONGITUDE, y = LATITUDE, colour = "Real values")) +
+  ggtitle("Log In Locations") 
+
+# Distribution of distance error (in meters)
+Error = sqrt((LONGLAT_PREDICTIONS$LONGITUDE - validationLONGLAT$LONGITUDE)^2 +(LONGLAT_PREDICTIONS$LATITUDE - validationLONGLAT$LATITUDE)^2)
+hist(Error, freq = T, xlab = " Absolute error (m)", col = "red", main = "Error distance in meters (Building 2)")
+
+
+
+
+
+
+
+
+
+
+
+
+# PREDICT COORDINATES OF BUILDING 3
+#LONGITUDE
+try <- Building3[,1:203]
+# Remove columns (WAP) where all the values = 0 (WAP was not detected)
+uniquelength <- sapply(try,function(x) length(unique(x)))
+try <- subset(try, select=uniquelength>1)
+# Remove rows (WAP) where all the values = 0 (WAP was not detected)
+keep <- apply(try[,1:203], 1, function(x) length(unique(x[!is.na(x)])) != 1)
+try <-  try[keep, ]
+
+# Normalize the data
+data_norm <- as.data.frame(t(apply(try, 1, function(x) (x - min(x))/(max(x)-min(x)))))
+
+
+# Build knn model
+uniquelength <- sapply(Building3,function(x) length(unique(x)))
+Building3 <- subset(Building3, select=uniquelength>1)
+# Remove rows (WAP) where all the values = 0 (WAP was not detected)
+keep <- apply(Building3[,1:203], 1, function(x) length(unique(x[!is.na(x)])) != 1)
+Building3 <-  Building3[keep, ]
+
+Building3[,1:203] <- data_norm
+
+Building3$LONGITUDE <- Building3$LONGITUDE
+cols <- c(1:204)
+training <- Building3[ , cols]
+training$LONGITUDE <- training$LONGITUDE
+
+# Import validation dataset
+validation <- subset(testData, BUILDINGID == 2)
+testData3 <- subset(testData, BUILDINGID == 2)
+
+# Remove columns (WAP) where all the values = 0 (WAP was not detected)
+uniquelength <- sapply(validation,function(x) length(unique(x)))
+validation <- subset(validation, select=uniquelength>1)
+# Remove rows (WAP) where all the values = 0 (WAP was not detected)
+keep <- apply(validation[,1:123], 1, function(x) length(unique(x[!is.na(x)])) != 1)
+validation <-  validation[keep, ]
+
+# Drop columns from validation that do not match with traning set
+cols_to_keep <- intersect(colnames(training),colnames(validation))
+training <- training[,cols_to_keep, drop=FALSE]
+validation <- validation[,cols_to_keep, drop=FALSE]
+validation <- as.data.frame(t(apply(validation[,1:104], 1, function(x) (x - min(x))/(max(x)-min(x)))))
+
+validation$LONGITUDE <- testData3$LONGITUDE
+validation$LONGITUDE <- validation$LONGITUDE
+
+validationLONG <- as.data.frame(testData3$LONGITUDE)
+
+set.seed(123)
+trainIndex <- createDataPartition(y = training$LONGITUDE, p = 0.75,
+                                  list = FALSE)
+
+
+#                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~    Training and Test sets  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+trainSet <- training [trainIndex,]
+testSet <- training [-trainIndex,]
+
+#                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~    K-NN    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+df <- trainSet
+
+checkMeans <- df
+checkMeans[,1:104][checkMeans[,1:104] == 0] <- NA
+rowMeans(checkMeans[,1:104], na.rm = T)
+# Keep only rows where mean value of detected WAPs is more than 0.5
+checkMeans <- subset(checkMeans, rowMeans(checkMeans[,1:104], na.rm = T) > 0.6)
+checkMeans[is.na(checkMeans)] <- 0
+
+df <- checkMeans
+
+
+set.seed(123)
+ctrl <- trainControl(method="cv",number = 10) 
+knnFit <- train((LONGITUDE ~ .), data = df, method = "knn", trControl = ctrl, tuneLength = 5)
+
+#Output of kNN fit
+knnFit 
+
+# test the k-NN model
+knnPredict <- predict(knnFit,newdata = testSet)
+postResample(knnPredict, testSet$LONGITUDE)
+
+# Check results on validation dataset
+# Apply k-NN model to the validation data
+knnPredicttest <- predict(knnFit,newdata = validation)
+postResample(knnPredicttest, validation$LONGITUDE)
+
+#              ~~~~~~~~~~~~ KNN ~~~~~~~~~~~~~~
+# Performance   RMSE      Rsquared       MAE 
+#              12.8063785  0.8358643  9.0960994
+
+
+# Save results in csv file
+#write.csv(knnPredicttest, file = "knnPredict.csv")
+LongPred3 <- as.data.frame(knnPredicttest)
+
+# LATITUDE 
+try <- Building3[,1:203]
+# Remove columns (WAP) where all the values = 0 (WAP was not detected)
+uniquelength <- sapply(try,function(x) length(unique(x)))
+try <- subset(try, select=uniquelength>1)
+# Remove rows (WAP) where all the values = 0 (WAP was not detected)
+keep <- apply(try[,1:203], 1, function(x) length(unique(x[!is.na(x)])) != 1)
+try <-  try[keep, ]
+
+# Normalize the data
+data_norm <- as.data.frame(t(apply(try, 1, function(x) (x - min(x))/(max(x)-min(x)))))
+
+
+# Build knn model
+uniquelength <- sapply(Building3,function(x) length(unique(x)))
+Building3 <- subset(Building3, select=uniquelength>1)
+# Remove rows (WAP) where all the values = 0 (WAP was not detected)
+keep <- apply(Building3[,1:203], 1, function(x) length(unique(x[!is.na(x)])) != 1)
+Building3 <-  Building3[keep, ]
+
+Building3[,1:203] <- data_norm
+
+Building3$LONGITUDE <- Building3$LONGITUDE
+cols <- c(1:203, 205)
+training <- Building3[ , cols]
+training$LATITUDE <- training$LATITUDE
+
+# Import validation dataset
+validation <- subset(testData, BUILDINGID == 2)
+testData3 <- subset(testData, BUILDINGID == 2)
+
+# Remove columns (WAP) where all the values = 0 (WAP was not detected)
+uniquelength <- sapply(validation,function(x) length(unique(x)))
+validation <- subset(validation, select=uniquelength>1)
+# Remove rows (WAP) where all the values = 0 (WAP was not detected)
+keep <- apply(validation[,1:123], 1, function(x) length(unique(x[!is.na(x)])) != 1)
+validation <-  validation[keep, ]
+
+# Drop columns from validation that do not match with traning set
+cols_to_keep <- intersect(colnames(training),colnames(validation))
+training <- training[,cols_to_keep, drop=FALSE]
+validation <- validation[,cols_to_keep, drop=FALSE]
+validation <- as.data.frame(t(apply(validation[,1:104], 1, function(x) (x - min(x))/(max(x)-min(x)))))
+
+validation$LATITUDE <- testData3$LATITUDE
+validation$LATITUDE <- validation$LATITUDE
+
+validationLAT <- as.data.frame(testData3$LATITUDE)
+
+set.seed(123)
+trainIndex <- createDataPartition(y = training$LATITUDE, p = 0.75,
+                                  list = FALSE)
+
+
+#                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~    Training and Test sets  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+trainSet <- training [trainIndex,]
+testSet <- training [-trainIndex,]
+
+#                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~    K-NN    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+df <- trainSet
+
+checkMeans <- df
+checkMeans[,1:104][checkMeans[,1:104] == 0] <- NA
+rowMeans(checkMeans[,1:104], na.rm = T)
+# Keep only rows where mean value of detected WAPs is more than 0.5
+checkMeans <- subset(checkMeans, rowMeans(checkMeans[,1:104], na.rm = T) > 0.6)
+checkMeans[is.na(checkMeans)] <- 0
+
+df <- checkMeans
+
+
+set.seed(123)
+ctrl <- trainControl(method="cv",number = 10) 
+knnFit <- train((LATITUDE ~ .), data = df, method = "knn", trControl = ctrl, tuneLength = 5)
+
+#Output of kNN fit
+knnFit 
+
+# test the k-NN model
+knnPredict <- predict(knnFit,newdata = testSet)
+postResample(knnPredict, testSet$LATITUDE)
+
+# Check results on validation dataset
+# Apply k-NN model to the validation data
+knnPredicttest <- predict(knnFit,newdata = validation)
+postResample(knnPredicttest, validation$LATITUDE)
+
+#              ~~~~~~~~~~~~ KNN ~~~~~~~~~~~~~~
+# Performance    RMSE       Rsquared       MAE 
+#               9.9643518  0.8955963  7.4651590
+
+# Save results in csv file
+#write.csv(knnPredicttest, file = "knnPredictLAT.csv")
+LatPred3 <- as.data.frame(knnPredicttest)
+LONGLAT_PREDICTIONS <- as.data.frame(c(LongPred3, LatPred3))
+
+validationLONG <- testData3$LONGITUDE
+validationLAT <- testData3$LATITUDE
+
+validationLONGLAT <- as.data.frame(c(validationLONG, validationLAT))
+colnames(validationLONGLAT)[1] <- 'LONGITUDE'
+colnames(validationLONGLAT)[2] <- 'LATITUDE'
+
+# change column names
+colnames(LONGLAT_PREDICTIONS)[1] <- 'LONGITUDE'
+colnames(LONGLAT_PREDICTIONS)[2] <- 'LATITUDE'
+
+# Plot real and predicted results
+# Training and Validation log in locations
+ggplot() +
+  geom_point(data = LONGLAT_PREDICTIONS , aes(x = LONGITUDE, y = LATITUDE, colour = "Predictions")) +
+  geom_point(data = testData3 , aes(x = LONGITUDE, y = LATITUDE, colour = "Real values")) +
+  ggtitle("Log In Locations") 
+
+# Distribution of distance error (in meters)
+Error = sqrt((LONGLAT_PREDICTIONS$LONGITUDE - testData3$LONGITUDE)^2 +(LONGLAT_PREDICTIONS$LATITUDE - testData3$LATITUDE)^2)
+hist(Error, freq = T, xlab = " Absolute error (m)", col = "red", main = "Error distance in meters (Building 1)")
+
+
 
 
