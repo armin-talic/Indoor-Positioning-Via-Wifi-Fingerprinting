@@ -161,3 +161,39 @@ The visual result of predicted coordinates and the real ones can be seen in the 
 The distribution of the distance error in meters is shown in the figure below.
 
 ![error distance building 1](https://user-images.githubusercontent.com/32273216/35739048-bd968374-0830-11e8-8b4e-dce516da2421.png)
+
+### Building 2 Coordinates prediction
+
+The performance of the model on validation set for Building 1 for longitude and latitude is shown below.
+
+Longitude KNN model performance:
+RMSE = 9.385072, Rsquared = 0.965634, MAE = 7.114257
+
+Latitude KNN model performance:
+RMSE = 11.4652267, Rsquared = 0.9069251, MAE = 8.1506292 
+
+The visual result of predicted coordinates and the real ones can be seen in the following figure.
+
+![building 2 result](https://user-images.githubusercontent.com/32273216/36063963-671bb2f8-0e84-11e8-9ef2-c3d136f9bcc0.png)
+
+The distribution of the distance error in meters is shown in the figure below.
+
+![building 2 errors](https://user-images.githubusercontent.com/32273216/36063980-73071c42-0e84-11e8-8491-f934d65ea62a.png)
+
+### Building 2 Coordinates prediction
+
+The performance of the model on validation set for Building 1 for longitude and latitude is shown below.
+
+Longitude KNN model performance:
+RMSE = 12.8063785, Rsquared = 0.8358643, MAE = 9.0960994 
+
+Latitude KNN model performance:
+RMSE = 10.7050057, Rsquared = 0.8955963, MAE = 8.1393196  
+
+The visual result of predicted coordinates and the real ones can be seen in the following figure.
+
+![building 3 results](https://user-images.githubusercontent.com/32273216/36063996-bd3e67c0-0e84-11e8-9506-b424022d93ce.png)
+
+The distribution of the distance error in meters is shown in the figure below.
+
+![building 3 errors](https://user-images.githubusercontent.com/32273216/36064001-d0632c00-0e84-11e8-8e2a-c8327cd4f646.png)
