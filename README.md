@@ -2,7 +2,7 @@
 Predicting people's location (Building, Floor and Coordinates) from WAPs signal information using classification and regression machine learning algorithms (K-NN, Gradient boosting, and Random Forest)
 
 # About the datasets
-Source od the datasets: http://archive.ics.uci.edu/ml/datasets/UJIIndoorLoc
+Source of the datasets: http://archive.ics.uci.edu/ml/datasets/UJIIndoorLoc
 
 Two datasets, training and validation, contain information about 520 WAPs signal strengths, three buildings and their floors, coordinates of users who logged in, space where the users logged in and the relative position (inside or outside the room), user ID, phone ID, and timestamp. 
 The data was collected at Jaume I University.
