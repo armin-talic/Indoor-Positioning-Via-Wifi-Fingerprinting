@@ -180,7 +180,7 @@ The distribution of the distance error in meters is shown in the figure below.
 
 ![building 2 errors](https://user-images.githubusercontent.com/32273216/36063980-73071c42-0e84-11e8-8491-f934d65ea62a.png)
 
-### Building 2 Coordinates prediction
+### Building 3 Coordinates prediction
 
 The performance of the model on validation set for Building 1 for longitude and latitude is shown below.
 
